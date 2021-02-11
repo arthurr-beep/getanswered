@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using GetAnsweredApp.API.Data.Interface;
 using GetAnsweredApp.API.Data.Models;
+using GetAnsweredApp.API.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace GetAnsweredApp.API.Controllers
 {
@@ -14,10 +16,13 @@ namespace GetAnsweredApp.API.Controllers
     public class QuestionsController : ControllerBase
     {
         private readonly IDataRepository _dataRepository;
+        private readonly IHubContext<QuestionsHub> _questionsHub;
+        
 
-        public QuestionsController(IDataRepository dataRepository)
+        public QuestionsController(IDataRepository dataRepository, IHubContext<QuestionsHub> questionsHub)
         {
             _dataRepository = dataRepository;
+            _questionsHub = questionsHub;
         }
 
         [HttpGet]
@@ -113,6 +118,14 @@ namespace GetAnsweredApp.API.Controllers
                     Created = DateTime.UtcNow
                 }
             );
+
+            _questionsHub.Clients.Group(
+                    $"Question-{answerPostRequest.QuestionId.Value}")
+                .SendAsync(
+                    "ReceiveQuestion",
+                    _dataRepository.GetQuestion(
+                answerPostRequest.QuestionId.Value));
+
             return savedAnswer;
         }
     }

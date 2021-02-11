@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DbUp;
 using GetAnsweredApp.API.Data;
 using GetAnsweredApp.API.Data.Interface;
+using GetAnsweredApp.API.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -42,6 +43,14 @@ namespace GetAnsweredApp.API
             }
 
             services.AddScoped<IDataRepository, DataRepository>();
+            services.AddCors(options =>
+                options.AddPolicy("CorsPolicy", builder =>
+                    builder.AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .WithOrigins("http://localhost:3000")
+                        .AllowCredentials()));
+
+            services.AddSignalR();
 
             services.AddControllers();
         }
@@ -59,10 +68,12 @@ namespace GetAnsweredApp.API
             app.UseRouting();
 
             app.UseAuthorization();
+            app.UseCors("CorsPolicy");
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<QuestionsHub>("/questionsHub");
             });
         }
     }
